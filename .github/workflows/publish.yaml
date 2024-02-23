@@ -1,32 +1,40 @@
 name: Release
 
-premisions: contents:write
+permissions:
+  contents: write
 
 on:
   push:
-  tags:
-    - "v[0-9]+.*"
+    tags:
+      - "v[0-9]+.*"
 
 jobs:
   create-release:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-    - uses: taiki-e/create-gh-release-action@v1
-    with:
-      token: ${{ secrets.GITHUB_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create GitHub Release
+        uses: taiki-e/create-gh-release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   upload-assets:
-    needs:create-release
+    needs: create-release
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install tools
-        run: sudo apt-get update --yes && sudo apt-get install --yes libxi-dev libxi11-dev libxcb1 libxrandr2 libdbus-1-3 libxtst-dev
-        if: contains(matrix.os, 'ubuntu-latest')
-        - uses: taiki-e/upload-rust-binary-action@v1
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update --yes
+          sudo apt-get install --yes libxi-dev libxi11-dev libxcb1 libxrandr2 libdbus-1-3 libxtst-dev
+      - name: Upload Binary
+        uses: taiki-e/upload-rust-binary-action@v1
         with:
-          target: ${{matrix.taget}}
-          token: ${{secrets.GITHUB_TOKEN}}
+          target: ${{ matrix.target }}
+          token: ${{ secrets.GITHUB_TOKEN }}
